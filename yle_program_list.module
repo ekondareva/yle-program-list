@@ -90,20 +90,19 @@ function yle_program_list_field_widget_form(&$form, &$form_state, $field, $insta
   $widget = $instance['widget'];
   $settings = $widget['settings'];
   
-  //dpm($instance['widget']['settings']['languages']);
   if ($widget['type'] == 'yle_program_list_text_field_autocomplete') {
   	$query_language = isset($settings['languages']) ? $settings['languages'] : "sv";
     $widget_element = $element + array(
-        '#type' => 'textfield',
-        '#title' => $element['#title'],
-        '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
-        '#maxlength' => $field['settings']['max_length'],
-        '#attributes' => array('class' => array('text-full')),
-        '#attached' => array(
-          'js' => array(drupal_get_path('module', 'yle_program_list') . '/js/yle_program_list.js'),
-          'css' => array(drupal_get_path('module', 'yle_program_list') . '/css/yle_program_list.css'),
-      	),
-        '#autocomplete_path' => 'yleprograms/autocomplete/'.$query_language,
+      '#type' => 'textfield',
+      '#title' => $element['#title'],
+      '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+      '#maxlength' => $field['settings']['max_length'],
+      '#attributes' => array('class' => array('text-full')),
+      '#attached' => array(
+        'js' => array(drupal_get_path('module', 'yle_program_list') . '/js/yle_program_list.js'),
+        'css' => array(drupal_get_path('module', 'yle_program_list') . '/css/yle_program_list.css'),
+      ),
+      '#autocomplete_path' => 'yleprograms/autocomplete/'.$query_language,
     );
     $element['value'] = $widget_element;
   }
@@ -115,7 +114,6 @@ function yle_program_list_field_widget_form(&$form, &$form_state, $field, $insta
  * Callback function for the autocomplete menu item.
  */
 function _yle_program_list_autocomplete($language, $search_string) {
-  watchdog('yle url', $search_string);
   //https://external.api.yle.fi/v1/programs/items.json?app_id=API_ID&app_key=API_KEY&q=drupal
   $ypl_limit = variable_get('yle_program_list_cache_lifetime','15');
 
@@ -190,5 +188,5 @@ function _yle_program_list_cache_get($cid) {
  * Saves search results to cache.
  */
 function _yle_program_list_cache_set($cid, array $data) {
-  cache_set($cid, $data, 'yle-program-list-cache', time() + 5*60);
+  cache_set($cid, $data, 'yle-program-list-cache', time() + 30*60);
 }

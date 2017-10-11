@@ -1,0 +1,16 @@
+.media-type {
+  background-repeat: no-repeat;
+  background-position: center center;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  padding: 0px 5px;
+}
+
+.media-type-audio {
+  background-image: url('../img/audio16x16.png');
+}
+
+.media-type-video {
+  background-image: url('../img/video16x16.png');
+}
