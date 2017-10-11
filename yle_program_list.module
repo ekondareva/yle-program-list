@@ -121,8 +121,14 @@ function _yle_program_list_autocomplete($language, $search_string) {
 
   $app_key = variable_get('yle_program_list_app_key','');
   $app_id = variable_get('yle_program_list_app_id','');
+  
+  $items = explode(',', $search_string);
+  $search_item = array_pop($items);
+  if (!isset($search_item) || (strlen($search_item)<2)) {
+    return array();
+  }
     
-  $uri = YPL_URI.'?q='.rawurlencode($search_string).'&language='.$language.'&limit='.$ypl_limit.'&app_key='.rawurlencode($app_key).'&app_id='.rawurlencode($app_id);
+  $uri = YPL_URI.'?q='.rawurlencode($search_item).'&language='.$language.'&limit='.$ypl_limit.'&app_key='.rawurlencode($app_key).'&app_id='.rawurlencode($app_id);
   $options = array(
       'method' => 'GET',
       'timeout' => 5,
@@ -142,6 +148,7 @@ function _yle_program_list_autocomplete($language, $search_string) {
   }
   
   return _yle_program_list_parse_result($search['data'], $language);
+  
 }
 
 /**

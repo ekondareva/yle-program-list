@@ -62,27 +62,33 @@ Drupal.jsAC.prototype.found = function (matches) {
   if (!this.input.value.length) {
     return false;
   }
-
+  var items = this.input.value.split(',');
+  items.pop();
+  var content = items.join(',');
+  if (content.length > 0) {
+    content += ', ';
+  }
+  //console.log(content);
   // Prepare matches.
   var ul = $('<ul></ul>');
   var ac = this;
-  var mediaTypeClass = "media-type-video";
-  var image_path = Drupal.settings.basePath + "sites/all/modules/custom/yle_program_list/img/video.png";
+  var mediaTypeClass = 'media-type-video';
+  var image_path = Drupal.settings.basePath + 'sites/all/modules/custom/yle_program_list/img/video.png';
   for (key in matches) {
-  	if (matches[key]['mediaType']=="Audio") {
-  	  mediaTypeClass = "media-type-audio";
-  	  image_path = Drupal.settings.basePath + "sites/all/modules/custom/yle_program_list/img/audio.png"
+  	if (matches[key].mediaType=='Audio') {
+  	  mediaTypeClass = 'media-type-audio';
+  	  image_path = Drupal.settings.basePath + 'sites/all/modules/custom/yle_program_list/img/audio.png';
   	}
   	
-    $('<li title="'+matches[key]['description']+'"></li>')
+    $('<li title="'+matches[key].description+'"></li>')
       .html($('<div class="yle-item"></div>').html(
         '<img src="'+image_path+'" style="width:16px; height:16px;"></img>'+
-      	'<span class="title">'+matches[key]['title']+'</span>'
+      	'<span class="title">'+matches[key].title+'</span>'
       ))
       .mousedown(function () { ac.hidePopup(this); })
       .mouseover(function () { ac.highlight(this); })
       .mouseout(function () { ac.unhighlight(this); })
-      .data('autocompleteValue', matches[key]['title'])
+      .data('autocompleteValue', content+matches[key].title)
       .appendTo(ul);
   }
 
