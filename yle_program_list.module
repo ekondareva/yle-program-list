@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * @file
+ * Provides an autocomplete widget for Drupal fields.
+ */
+
+define('YPL_URI',"https://external.api.yle.fi/v1/programs/items.json");
+
+/**
+ * Implements hook_menu().
+ */
+function yle_program_list_menu() {
+  $items = array();
+
+  $items['admin/config/yle_program_list'] = array(
+    'title' => 'YLE Program List configuration',
+    'description' => 'Configuration of YLE Program List.',
+    'position' => 'left',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/yle_program_list/common'] = array(
+    'title' => 'YLE Program List common settings',
+    'description' => 'Common settings in YLE Program List.',
+    'weight' => -20,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('yle_program_list_admin_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'yle_program_list.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  // Autocomplete query.
+  $items['yleprograms/autocomplete'] = array(
+    'title' => 'Autocomplete results',
+    'page callback' => '_yle_program_list_autocomplete',
+    'delivery callback' => 'drupal_json_output',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_field_widget_info().
+ *
+ */
+function yle_program_list_field_widget_info() {
+  //Defines the widget for autocompleting text fields using YLE Program List.
+  return array(
+    'yle_program_list_text_field_autocomplete' => array(
+      'label' => t('YLE Program List Autocomplete Text field'),
+      'field types' => array('text'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ *
+ * Provides an autocomplete lookup widget  
+ */
+function yle_program_list_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  if ($instance['widget']['type'] == 'yle_program_list_text_field_autocomplete') {
+    $widget = $element + array(
+        '#type' => 'textfield',
+        '#title' => $element['#title'],
+        '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+        '#size' => $instance['widget']['settings']['size'],
+        '#maxlength' => $field['settings']['max_length'],
+        '#attributes' => array('class' => array('text-full')),
+        '#autocomplete_path' => 'yleprograms/autocomplete',
+    );
+    $element['value'] = $widget;
+  }
+  return $element;
+}
+
+
+/**
+ * Callback function for the autocomplete menu item.
+ */
+function _yle_program_list_autocomplete($search_string) {
+  watchdog('yle url', $search_string);
+  //https://external.api.yle.fi/v1/programs/items.json?app_id=API_ID&app_key=API_KEY&q=drupal
+  $ypl_limit = variable_get('yle_program_list_cache_lifetime','15');
+
+  $app_key = variable_get('yle_program_list_app_key','');
+  $app_id = variable_get('yle_program_list_app_id','');
+    
+  $uri = YPL_URI.'?q='.rawurlencode($search_string).'&language=fi&limit='.$ypl_limit.'&app_key='.rawurlencode($app_key).'&app_id='.rawurlencode($app_id);
+  $options = array(
+      'method' => 'GET',
+      'timeout' => 5,
+      'headers' => array(
+        'Accept' => 'application/json',
+      ),
+    );
+  
+  $result = drupal_http_request($uri, $options);
+  if (empty($result->error)) {
+    $search = drupal_json_decode($result->data);
+  }
+  else {
+    // Error while performing the query
+    drupal_set_message('error: '.$result->error); 
+    return array(); 
+  }
+  
+  return _yle_program_list_parse_result($search['data']);
+}
+
+/**
+ * Parses the response to show id, title and media type.
+ */
+function _yle_program_list_parse_result(array $search_result) {
+  $program_list = array();
+  foreach ($search_result as $result) {
+    $id = $result['id'];
+    $title = $result['title']['fi'];
+    $media_type = ($result['typeMedia']=='RadioContent') ? "Audio" : "Video";
+    //$program_list[$id] = array('title' => $title, 'mediaType' => $media_type);
+    $program_list[$id] = $title;
+  }
+  return $program_list;
+}

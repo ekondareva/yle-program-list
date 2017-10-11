@@ -1,0 +1,5 @@
+name = YLE Program List
+description =  Integration between external YLE api and Drupal fields.
+package = yle program list
+core = 7.x
+configure = admin/config/yle_program_list/settings

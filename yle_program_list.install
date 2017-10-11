@@ -1,0 +1,4 @@
+<?php
+/**
+ * @file Operations during install, enable, uninstall and disable.
+ */
