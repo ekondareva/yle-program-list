@@ -61,22 +61,51 @@ function yle_program_list_field_widget_info() {
 }
 
 /**
+ * Implements hook_field_widget_settings_form().
+   Offers language settings for the field.
+ */
+function yle_program_list_field_widget_settings_form($field, $instance) {
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+  if ($widget['type'] == 'yle_program_list_text_field_autocomplete') {
+  	$field_languages = array("fi", "sv", "en");
+  	$default = isset($settings['languages']) ? $settings['languages'] : "sv";
+  	
+  	$form['languages'] = array(
+      '#type' => 'select',
+      '#title' => t("Choose the query language for autocomplete"),
+      '#options' => drupal_map_assoc($field_languages),
+      '#default_value' => $default,
+    );
+  }
+  return $form;
+}
+
+/**
  * Implements hook_field_widget_form().
  *
  * Provides an autocomplete lookup widget  
  */
 function yle_program_list_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-  if ($instance['widget']['type'] == 'yle_program_list_text_field_autocomplete') {
-    $widget = $element + array(
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+  
+  //dpm($instance['widget']['settings']['languages']);
+  if ($widget['type'] == 'yle_program_list_text_field_autocomplete') {
+  	$query_language = isset($settings['languages']) ? $settings['languages'] : "sv";
+    $widget_element = $element + array(
         '#type' => 'textfield',
         '#title' => $element['#title'],
         '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
-        '#size' => $instance['widget']['settings']['size'],
         '#maxlength' => $field['settings']['max_length'],
         '#attributes' => array('class' => array('text-full')),
-        '#autocomplete_path' => 'yleprograms/autocomplete',
+        '#attached' => array(
+          'js' => array(drupal_get_path('module', 'yle_program_list') . '/js/yle_program_list.js'),
+          'css' => array(drupal_get_path('module', 'yle_program_list') . '/css/yle_program_list.css'),
+      	),
+        '#autocomplete_path' => 'yleprograms/autocomplete/'.$query_language,
     );
-    $element['value'] = $widget;
+    $element['value'] = $widget_element;
   }
   return $element;
 }
@@ -85,7 +114,7 @@ function yle_program_list_field_widget_form(&$form, &$form_state, $field, $insta
 /**
  * Callback function for the autocomplete menu item.
  */
-function _yle_program_list_autocomplete($search_string) {
+function _yle_program_list_autocomplete($language, $search_string) {
   watchdog('yle url', $search_string);
   //https://external.api.yle.fi/v1/programs/items.json?app_id=API_ID&app_key=API_KEY&q=drupal
   $ypl_limit = variable_get('yle_program_list_cache_lifetime','15');
@@ -93,7 +122,7 @@ function _yle_program_list_autocomplete($search_string) {
   $app_key = variable_get('yle_program_list_app_key','');
   $app_id = variable_get('yle_program_list_app_id','');
     
-  $uri = YPL_URI.'?q='.rawurlencode($search_string).'&language=fi&limit='.$ypl_limit.'&app_key='.rawurlencode($app_key).'&app_id='.rawurlencode($app_id);
+  $uri = YPL_URI.'?q='.rawurlencode($search_string).'&language='.$language.'&limit='.$ypl_limit.'&app_key='.rawurlencode($app_key).'&app_id='.rawurlencode($app_id);
   $options = array(
       'method' => 'GET',
       'timeout' => 5,
@@ -112,20 +141,22 @@ function _yle_program_list_autocomplete($search_string) {
     return array(); 
   }
   
-  return _yle_program_list_parse_result($search['data']);
+  return _yle_program_list_parse_result($search['data'], $language);
 }
 
 /**
  * Parses the response to show id, title and media type.
  */
-function _yle_program_list_parse_result(array $search_result) {
+function _yle_program_list_parse_result(array $search_result, $language) {
   $program_list = array();
   foreach ($search_result as $result) {
     $id = $result['id'];
-    $title = $result['title']['fi'];
+    $title = isset($result['title'][$language]) ? $result['title'][$language] : NULL;
+    $description = isset($result['description'][$language]) ? $result['description'][$language] : "";
     $media_type = ($result['typeMedia']=='RadioContent') ? "Audio" : "Video";
-    //$program_list[$id] = array('title' => $title, 'mediaType' => $media_type);
-    $program_list[$id] = $title;
+    if (isset($title)) {
+   	  $program_list[$id] = array('title' => $title, 'mediaType' => $media_type, 'description' => $description);
+   	}
   }
   return $program_list;
 }
