@@ -129,7 +129,13 @@ function _yle_program_list_autocomplete($language, $search_string) {
   }
     
   $uri = YPL_URI.'?q='.rawurlencode($search_item).'&language='.$language.'&limit='.$ypl_limit.'&app_key='.rawurlencode($app_key).'&app_id='.rawurlencode($app_id);
-  $options = array(
+  
+  $cache = _yle_program_list_cache_get($uri);
+  if (!empty($cache)) {
+    $search = $cache;
+  }
+  else {
+    $options = array(
       'method' => 'GET',
       'timeout' => 5,
       'headers' => array(
@@ -137,18 +143,19 @@ function _yle_program_list_autocomplete($language, $search_string) {
       ),
     );
   
-  $result = drupal_http_request($uri, $options);
-  if (empty($result->error)) {
-    $search = drupal_json_decode($result->data);
-  }
-  else {
-    // Error while performing the query
-    drupal_set_message('error: '.$result->error); 
-    return array(); 
+    $result = drupal_http_request($uri, $options);
+    if (empty($result->error)) {
+      $search = drupal_json_decode($result->data);
+      _yle_program_list_cache_set($uri, $search);
+    }
+    else {
+      // Error while performing the query
+      drupal_set_message('error: '.$result->error); 
+      return array(); 
+    }
   }
   
   return _yle_program_list_parse_result($search['data'], $language);
-  
 }
 
 /**
@@ -166,4 +173,22 @@ function _yle_program_list_parse_result(array $search_result, $language) {
    	}
   }
   return $program_list;
+}
+
+/**
+ * Gets search results from cache.
+ */
+function _yle_program_list_cache_get($cid) {
+  $cache = cache_get($cid, 'yle-program-list-cache');
+  if (!empty($cache)) {
+    return $cache->data;
+  }
+  return FALSE;
+}
+
+/**
+ * Saves search results to cache.
+ */
+function _yle_program_list_cache_set($cid, array $data) {
+  cache_set($cid, $data, 'yle-program-list-cache', time() + 5*60);
 }
