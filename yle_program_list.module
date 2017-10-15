@@ -7,6 +7,9 @@
 
 define('YPL_URI',"https://external.api.yle.fi/v1/programs/items.json");
 
+function yle_program_list_init() {
+  drupal_add_library('system', 'ui.autocomplete');
+}
 /**
  * Implements hook_menu().
  */
@@ -97,12 +100,11 @@ function yle_program_list_field_widget_form(&$form, &$form_state, $field, $insta
       '#title' => $element['#title'],
       '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
       '#maxlength' => $field['settings']['max_length'],
-      '#attributes' => array('class' => array('text-full')),
+      '#attributes' => array('class' => array('text-full', 'ypl-autocomplete'), 'langquery' => $query_language),
       '#attached' => array(
         'js' => array(drupal_get_path('module', 'yle_program_list') . '/js/yle_program_list.js'),
         'css' => array(drupal_get_path('module', 'yle_program_list') . '/css/yle_program_list.css'),
       ),
-      '#autocomplete_path' => 'yleprograms/autocomplete/'.$query_language,
     );
     $element['value'] = $widget_element;
   }
@@ -162,12 +164,12 @@ function _yle_program_list_autocomplete($language, $search_string) {
 function _yle_program_list_parse_result(array $search_result, $language) {
   $program_list = array();
   foreach ($search_result as $result) {
-    $id = $result['id'];
-    $title = isset($result['title'][$language]) ? $result['title'][$language] : NULL;
-    $description = isset($result['description'][$language]) ? $result['description'][$language] : "";
-    $media_type = ($result['typeMedia']=='RadioContent') ? "Audio" : "Video";
+    $id = check_plain($result['id']);
+    $title = isset($result['title'][$language]) ? check_plain($result['title'][$language]) : NULL;
+    $description = isset($result['description'][$language]) ? check_plain($result['description'][$language]) : "";
+    $media_type = ($result['typeMedia']=='RadioContent') ? "audio" : "video";
     if (isset($title)) {
-   	  $program_list[$id] = array('title' => $title, 'mediaType' => $media_type, 'description' => $description);
+   	  array_push($program_list, array('id' => $id, 'title' => $title, 'mediaType' => $media_type, 'description' => $description));
    	}
   }
   return $program_list;
