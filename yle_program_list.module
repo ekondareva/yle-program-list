@@ -117,7 +117,7 @@ function yle_program_list_field_widget_form(&$form, &$form_state, $field, $insta
  */
 function _yle_program_list_autocomplete($language, $search_string) {
   //https://external.api.yle.fi/v1/programs/items.json?app_id=API_ID&app_key=API_KEY&q=drupal
-  $ypl_limit = variable_get('yle_program_list_cache_lifetime','15');
+  $ypl_limit = variable_get('yle_program_list_limit','15');
 
   $app_key = variable_get('yle_program_list_app_key','');
   $app_id = variable_get('yle_program_list_app_id','');

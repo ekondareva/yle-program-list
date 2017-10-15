@@ -41,7 +41,7 @@ function yle_program_list_admin_settings_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Limit.'),
     '#description' => t('Sets limit for the size of the returned collection'),
-    '#default_value' => variable_get('yle_program_list_limit', '10'),
+    '#default_value' => variable_get('yle_program_list_limit', '15'),
     '#disabled' => FALSE,
     '#size' => 3,
     '#maxlength' => 3,
